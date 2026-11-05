@@ -1,0 +1,11 @@
+{
+  "@@locale": "vi",
+  "appTitle": "2048",
+  "game2048Subtitle": "Ghép ô trượt",
+  "game2048Score": "Điểm",
+  "game2048NewGame": "Ván mới",
+  "game2048YouWin": "Bạn đã thắng!",
+  "game2048GameOver": "Hết lượt!",
+  "game2048TryAgain": "Thử lại",
+  "game2048KeepGoing": "Tiếp tục"
+}

@@ -1,0 +1,11 @@
+{
+  "@@locale": "en",
+  "appTitle": "2048",
+  "game2048Subtitle": "Sliding tile puzzle",
+  "game2048Score": "Score",
+  "game2048NewGame": "New Game",
+  "game2048YouWin": "You win!",
+  "game2048GameOver": "Game over!",
+  "game2048TryAgain": "Try again",
+  "game2048KeepGoing": "Keep going"
+}
