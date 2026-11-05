@@ -1,9 +1,13 @@
 name: CI
 
+# Bỏ qua các thay đổi chỉ ở tài liệu để tiết kiệm phút GitHub Actions
+# (Distribute chạy sau CI nên cũng không build lại cho các thay đổi này).
 on:
   push:
     branches: [main]
+    paths-ignore: ['**.md', 'docs/**', 'LICENSE']
   pull_request:
+    paths-ignore: ['**.md', 'docs/**', 'LICENSE']
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -13,6 +17,8 @@ jobs:
   check:
     name: Format, analyze, test
     runs-on: ubuntu-latest
+    # Mặc định GitHub cho job chạy tới 6 tiếng; job bị treo sẽ ăn hết phút.
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
 
