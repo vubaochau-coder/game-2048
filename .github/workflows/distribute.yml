@@ -139,6 +139,12 @@ jobs:
           TESTERS: ${{ vars.FIREBASE_TESTERS }}
           GROUPS: ${{ vars.FIREBASE_TESTER_GROUPS }}
         run: |
+          # Bỏ khoảng trắng/xuống dòng thừa khi dán giá trị vào GitHub
+          # (firebase-tools báo "Invalid Firebase app ID" nếu còn sót).
+          FIREBASE_APP_ID="$(printf '%s' "$FIREBASE_APP_ID" | tr -d '[:space:]')"
+          TESTERS="$(printf '%s' "$TESTERS" | tr -d '[:space:]')"
+          GROUPS="$(printf '%s' "$GROUPS" | tr -d '[:space:]')"
+
           if [ -z "$SERVICE_ACCOUNT_JSON" ]; then
             echo "::error::Thiếu secret FIREBASE_SERVICE_ACCOUNT_JSON"
             exit 1
