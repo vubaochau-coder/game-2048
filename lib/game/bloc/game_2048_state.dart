@@ -11,6 +11,9 @@ class Game2048State extends Equatable {
   final List<int> spawnedTileIndices;
   final List<int> mergedTileIndices;
 
+  /// Máy đang tự chơi. Không lưu vào session: mở lại app luôn ở chế độ tay.
+  final bool isAutoPlaying;
+
   const Game2048State({
     required this.board,
     required this.score,
@@ -20,6 +23,7 @@ class Game2048State extends Equatable {
     required this.hasDismissedWinOverlay,
     this.spawnedTileIndices = const [],
     this.mergedTileIndices = const [],
+    this.isAutoPlaying = false,
   });
 
   factory Game2048State.initial() {
@@ -44,6 +48,7 @@ class Game2048State extends Equatable {
     bool? hasDismissedWinOverlay,
     List<int>? spawnedTileIndices,
     List<int>? mergedTileIndices,
+    bool? isAutoPlaying,
   }) {
     return Game2048State(
       board: board ?? this.board,
@@ -55,6 +60,7 @@ class Game2048State extends Equatable {
           hasDismissedWinOverlay ?? this.hasDismissedWinOverlay,
       spawnedTileIndices: spawnedTileIndices ?? this.spawnedTileIndices,
       mergedTileIndices: mergedTileIndices ?? this.mergedTileIndices,
+      isAutoPlaying: isAutoPlaying ?? this.isAutoPlaying,
     );
   }
 
@@ -69,6 +75,7 @@ class Game2048State extends Equatable {
       hasDismissedWinOverlay,
       spawnedTileIndices,
       mergedTileIndices,
+      isAutoPlaying,
     ];
   }
 }

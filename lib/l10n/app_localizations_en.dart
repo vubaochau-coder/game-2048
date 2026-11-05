@@ -31,4 +31,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get game2048KeepGoing => 'Keep going';
+
+  @override
+  String get game2048AutoPlay => 'Auto play';
+
+  @override
+  String get game2048StopAutoPlay => 'Stop';
 }

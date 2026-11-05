@@ -7,5 +7,7 @@
   "game2048YouWin": "Bạn đã thắng!",
   "game2048GameOver": "Hết lượt!",
   "game2048TryAgain": "Thử lại",
-  "game2048KeepGoing": "Tiếp tục"
+  "game2048KeepGoing": "Tiếp tục",
+  "game2048AutoPlay": "Tự chơi",
+  "game2048StopAutoPlay": "Dừng"
 }

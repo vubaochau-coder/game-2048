@@ -7,5 +7,7 @@
   "game2048YouWin": "You win!",
   "game2048GameOver": "Game over!",
   "game2048TryAgain": "Try again",
-  "game2048KeepGoing": "Keep going"
+  "game2048KeepGoing": "Keep going",
+  "game2048AutoPlay": "Auto play",
+  "game2048StopAutoPlay": "Stop"
 }

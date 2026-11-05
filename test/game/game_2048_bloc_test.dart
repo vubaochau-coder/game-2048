@@ -51,6 +51,13 @@ class FakeGame2048LocalStore extends Game2048LocalStore {
   }
 }
 
+Future<void> _startNewGame(Game2048Bloc bloc) async {
+  bloc.add(const Game2048Started());
+  await bloc.stream.firstWhere(
+    (s) => s.status == Game2048SessionStatus.playing,
+  );
+}
+
 void main() {
   late FakeGame2048Engine fakeEngine;
   late FakeGame2048LocalStore fakeStore;
@@ -263,5 +270,76 @@ void main() {
         expect(fakeStore.savedSession!.status, Game2048SessionStatus.playing);
       },
     );
+  });
+
+  group('Game2048Bloc auto play', () {
+    setUp(() {
+      bloc.close();
+      bloc = Game2048Bloc(
+        engine: fakeEngine,
+        store: fakeStore,
+        autoPlayInterval: const Duration(milliseconds: 10),
+      );
+    });
+
+    test('toggling on makes moves automatically, toggling off stops', () async {
+      await _startNewGame(bloc);
+      final initialBoard = bloc.state.board;
+
+      bloc.add(const Game2048AutoPlayToggled());
+      await bloc.stream.firstWhere((s) => s.isAutoPlaying);
+      await bloc.stream.firstWhere((s) => s.board != initialBoard);
+
+      bloc.add(const Game2048AutoPlayToggled());
+      await bloc.stream.firstWhere((s) => !s.isAutoPlaying);
+
+      final boardAfterStop = bloc.state.board;
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+      expect(bloc.state.board, boardAfterStop);
+    });
+
+    test('manual swipe takes control back from auto play', () async {
+      await _startNewGame(bloc);
+      bloc.add(const Game2048AutoPlayToggled());
+      await bloc.stream.firstWhere((s) => s.isAutoPlaying);
+
+      bloc.add(const Game2048SwipeRequested(Game2048Direction.left));
+      await bloc.stream.firstWhere((s) => !s.isAutoPlaying);
+      expect(bloc.state.isAutoPlaying, isFalse);
+    });
+
+    test('restart stops auto play', () async {
+      await _startNewGame(bloc);
+      bloc.add(const Game2048AutoPlayToggled());
+      await bloc.stream.firstWhere((s) => s.isAutoPlaying);
+
+      bloc.add(const Game2048RestartRequested());
+      await bloc.stream.firstWhere((s) => !s.isAutoPlaying);
+      expect(bloc.state.status, Game2048SessionStatus.playing);
+    });
+
+    test('auto play stops when the game is over', () async {
+      await _startNewGame(bloc);
+      fakeEngine.nextCanMove = false;
+
+      bloc.add(const Game2048AutoPlayToggled());
+      final finalState = await bloc.stream.firstWhere(
+        (s) => s.status == Game2048SessionStatus.gameOver && !s.isAutoPlaying,
+      );
+      expect(finalState.isAutoPlaying, isFalse);
+    });
+
+    test('cannot start auto play when the game is over', () async {
+      await _startNewGame(bloc);
+      fakeEngine.nextCanMove = false;
+      bloc.add(const Game2048SwipeRequested(Game2048Direction.left));
+      await bloc.stream.firstWhere(
+        (s) => s.status == Game2048SessionStatus.gameOver,
+      );
+
+      bloc.add(const Game2048AutoPlayToggled());
+      await Future<void>.delayed(const Duration(milliseconds: 30));
+      expect(bloc.state.isAutoPlaying, isFalse);
+    });
   });
 }

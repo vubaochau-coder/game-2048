@@ -1,6 +1,9 @@
 import 'package:game_2048/game/logic/game_2048_engine.dart';
 import 'package:game_2048/game/logic/game_2048_enums.dart';
+import 'dart:async';
+
 import 'package:game_2048/game/logic/game_2048_local_store.dart';
+import 'package:game_2048/game/logic/game_2048_solver.dart';
 import 'package:game_2048/game/models/game_2048_saved_session.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'game_2048_event.dart';
@@ -9,11 +12,21 @@ import 'game_2048_state.dart';
 class Game2048Bloc extends Bloc<Game2048Event, Game2048State> {
   final Game2048Engine _engine;
   final Game2048LocalStore _store;
+  final Game2048Solver _solver;
 
-  Game2048Bloc({Game2048Engine? engine, Game2048LocalStore? store})
-    : _engine = engine ?? Game2048Engine(),
-      _store = store ?? Game2048LocalStore(),
-      super(Game2048State.initial()) {
+  /// Khoảng cách giữa hai nước đi khi tự chơi (đủ để xem animation 200ms).
+  final Duration autoPlayInterval;
+  Timer? _autoPlayTimer;
+
+  Game2048Bloc({
+    Game2048Engine? engine,
+    Game2048LocalStore? store,
+    Game2048Solver? solver,
+    this.autoPlayInterval = const Duration(milliseconds: 250),
+  }) : _engine = engine ?? Game2048Engine(),
+       _store = store ?? Game2048LocalStore(),
+       _solver = solver ?? Game2048Solver(),
+       super(Game2048State.initial()) {
     on<Game2048Started>(_onStarted);
     on<Game2048SwipeRequested>(_onSwipeRequested);
     on<Game2048RestartRequested>(_onRestartRequested);
@@ -21,6 +34,14 @@ class Game2048Bloc extends Bloc<Game2048Event, Game2048State> {
     on<Game2048TryAgainRequested>(_onTryAgainRequested);
     on<Game2048OverlayRevealRequested>(_onOverlayRevealRequested);
     on<Game2048AnimationConsumed>(_onAnimationConsumed);
+    on<Game2048AutoPlayToggled>(_onAutoPlayToggled);
+    on<Game2048AutoPlayTicked>(_onAutoPlayTicked);
+  }
+
+  @override
+  Future<void> close() {
+    _stopAutoPlayTimer();
+    return super.close();
   }
 
   _onStarted(Game2048Started event, Emitter emit) async {
@@ -58,10 +79,59 @@ class Game2048Bloc extends Bloc<Game2048Event, Game2048State> {
   }
 
   _onSwipeRequested(Game2048SwipeRequested event, Emitter emit) {
+    // Người chơi tự vuốt -> giành lại quyền điều khiển.
+    if (state.isAutoPlaying) _stopAutoPlay(emit);
+    _applyMove(event.direction, emit);
+  }
+
+  _onAutoPlayToggled(Game2048AutoPlayToggled event, Emitter emit) {
+    if (state.isAutoPlaying) {
+      _stopAutoPlay(emit);
+      return;
+    }
     if (state.status != Game2048SessionStatus.playing) return;
     if (state.isOverlayVisible) return;
 
-    final result = _engine.move(state.board, event.direction);
+    emit(state.copyWith(isAutoPlaying: true));
+    _autoPlayTimer = Timer.periodic(autoPlayInterval, (_) {
+      if (!isClosed) add(const Game2048AutoPlayTicked());
+    });
+  }
+
+  _onAutoPlayTicked(Game2048AutoPlayTicked event, Emitter emit) {
+    if (!state.isAutoPlaying) return;
+    if (state.status != Game2048SessionStatus.playing ||
+        state.isOverlayVisible) {
+      _stopAutoPlay(emit);
+      return;
+    }
+
+    final direction = _solver.bestMove(state.board);
+    if (direction == null) {
+      _stopAutoPlay(emit);
+      return;
+    }
+    _applyMove(direction, emit);
+
+    // Thắng (chạm 2048) hoặc thua -> dừng để người chơi xem kết quả.
+    if (state.status != Game2048SessionStatus.playing) _stopAutoPlay(emit);
+  }
+
+  _stopAutoPlay(Emitter emit) {
+    _stopAutoPlayTimer();
+    if (state.isAutoPlaying) emit(state.copyWith(isAutoPlaying: false));
+  }
+
+  _stopAutoPlayTimer() {
+    _autoPlayTimer?.cancel();
+    _autoPlayTimer = null;
+  }
+
+  _applyMove(Game2048Direction direction, Emitter emit) {
+    if (state.status != Game2048SessionStatus.playing) return;
+    if (state.isOverlayVisible) return;
+
+    final result = _engine.move(state.board, direction);
     if (!result.didMove) return;
 
     final newScore = state.score + result.scoreGain;
@@ -145,6 +215,7 @@ class Game2048Bloc extends Bloc<Game2048Event, Game2048State> {
   }
 
   _resetGame(Emitter emit) {
+    _stopAutoPlayTimer();
     final board = _engine.createInitialBoard();
     final newState = state.copyWith(
       board: board,
@@ -154,6 +225,7 @@ class Game2048Bloc extends Bloc<Game2048Event, Game2048State> {
       hasDismissedWinOverlay: false,
       spawnedTileIndices: [],
       mergedTileIndices: [],
+      isAutoPlaying: false,
     );
     emit(newState);
     _persistSession(newState);
