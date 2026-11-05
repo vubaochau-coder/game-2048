@@ -41,3 +41,37 @@ test/game/                  Test cho engine và bloc
 flutter analyze
 flutter test
 ```
+
+## Phát hành (Firebase App Distribution)
+
+- Package Android: `com.chauvb.game2048`
+- Dự án Firebase: `chess-app-chauvb` (dùng chung với app chess)
+- Flutter: phiên bản ghim trong `.fvmrc` (cũng được ghim ở `pubspec.yaml`)
+
+Hai workflow trong `.github/workflows/`:
+
+- **CI** (`ci.yml`): kiểm tra format, `flutter analyze`, `flutter test` cho mỗi PR và mỗi lần push lên `main`.
+- **Distribute** (`distribute.yml`): khi CI trên `main` xanh (hoặc chạy tay ở tab Actions), build APK release đã ký rồi đẩy lên Firebase App Distribution. Số build tự tăng theo số lần chạy workflow.
+
+Cấu hình cần có trong *Settings → Secrets and variables → Actions*:
+
+| Loại | Tên | Giá trị |
+| --- | --- | --- |
+| Secret | `FIREBASE_SERVICE_ACCOUNT_JSON` | Nội dung file JSON của service account có quyền *Firebase App Distribution Admin* |
+| Secret | `ANDROID_KEYSTORE_BASE64` | File keystore mã hoá base64 (`base64 -w0 upload-keystore.jks`) |
+| Secret | `ANDROID_KEYSTORE_PASSWORD` | Mật khẩu keystore |
+| Secret | `ANDROID_KEY_ALIAS` | Alias của key |
+| Secret | `ANDROID_KEY_PASSWORD` | Mật khẩu key |
+| Variable | `FIREBASE_APP_ID` | App ID trên Firebase (dạng `1:540704428434:android:...`) |
+| Variable | `FIREBASE_TESTER_GROUPS` và/hoặc `FIREBASE_TESTERS` | Alias nhóm tester / email tester, cách nhau bằng dấu phẩy |
+
+Build và ký trên máy: tạo `android/key.properties` (không commit) với nội dung
+
+```properties
+storePassword=...
+keyPassword=...
+keyAlias=upload
+storeFile=upload-keystore.jks
+```
+
+và đặt file keystore ở `android/app/upload-keystore.jks`. Không có `key.properties` thì bản release được ký bằng debug key.
