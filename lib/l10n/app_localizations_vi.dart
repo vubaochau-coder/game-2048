@@ -31,4 +31,10 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get game2048KeepGoing => 'Tiếp tục';
+
+  @override
+  String get game2048AutoPlay => 'Tự chơi';
+
+  @override
+  String get game2048StopAutoPlay => 'Dừng';
 }

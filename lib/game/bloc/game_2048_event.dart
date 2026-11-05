@@ -33,3 +33,13 @@ class Game2048OverlayRevealRequested extends Game2048Event {
 class Game2048AnimationConsumed extends Game2048Event {
   const Game2048AnimationConsumed();
 }
+
+/// Bật/tắt chế độ máy tự chơi.
+class Game2048AutoPlayToggled extends Game2048Event {
+  const Game2048AutoPlayToggled();
+}
+
+/// Một nhịp của chế độ tự chơi: AI chọn và thực hiện một nước đi.
+class Game2048AutoPlayTicked extends Game2048Event {
+  const Game2048AutoPlayTicked();
+}

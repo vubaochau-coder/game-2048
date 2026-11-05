@@ -145,6 +145,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Keep going'**
   String get game2048KeepGoing;
+
+  /// No description provided for @game2048AutoPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto play'**
+  String get game2048AutoPlay;
+
+  /// No description provided for @game2048StopAutoPlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get game2048StopAutoPlay;
 }
 
 class _AppLocalizationsDelegate
