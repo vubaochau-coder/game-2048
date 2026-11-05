@@ -1,4 +1,4 @@
-package com.example.game_2048
+package com.chauvb.game2048
 
 import io.flutter.embedding.android.FlutterActivity
 

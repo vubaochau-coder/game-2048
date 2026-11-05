@@ -1,0 +1,167 @@
+name: Distribute
+
+# Chạy sau khi CI trên main xanh (không đẩy bản build chưa qua test),
+# hoặc chạy tay từ tab Actions.
+#
+# Cần cấu hình trong Settings → Secrets and variables → Actions:
+#   Secrets:
+#     FIREBASE_SERVICE_ACCOUNT_JSON  nội dung file JSON của service account có
+#                                    quyền "Firebase App Distribution Admin"
+#     ANDROID_KEYSTORE_BASE64        file .jks mã hóa base64 (base64 -i upload-keystore.jks)
+#     ANDROID_KEYSTORE_PASSWORD      mật khẩu keystore
+#     ANDROID_KEY_ALIAS              alias của key
+#     ANDROID_KEY_PASSWORD           mật khẩu key
+#   Variables:
+#     FIREBASE_APP_ID                App ID của app Android trên Firebase
+#                                    (dạng 1:540704428434:android:...)
+#     FIREBASE_TESTERS               email tester, cách nhau bằng dấu phẩy
+#     FIREBASE_TESTER_GROUPS         alias nhóm tester trong Firebase
+#     (cần FIREBASE_APP_ID và ít nhất một trong hai biến tester)
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release_notes:
+        description: Ghi chú phát hành (để trống thì dùng commit message)
+        required: false
+
+concurrency:
+  group: distribute
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Dùng chung dự án Firebase với app chess.
+  FIREBASE_PROJECT_ID: chess-app-chauvb
+  FIREBASE_APP_ID: ${{ vars.FIREBASE_APP_ID }}
+
+jobs:
+  distribute:
+    name: Build APK and upload to Firebase App Distribution
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' &&
+       github.event.workflow_run.event == 'push')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Read Flutter version from .fvmrc
+        id: fvm
+        run: echo "version=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ steps.fvm.outputs.version }}
+          channel: stable
+          cache: true
+
+      # Không có keystore cố định thì mỗi lần chạy ký bằng một debug key mới,
+      # tester không cài đè được bản trước.
+      - name: Restore upload keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::Thiếu secret ANDROID_KEYSTORE_BASE64"
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEY_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=upload-keystore.jks
+          EOF
+
+      - run: flutter pub get --enforce-lockfile
+
+      # Số build tự tăng theo số lần chạy workflow, không cần commit ngược vào
+      # repo; cộng với số build trong pubspec để không bao giờ thấp hơn nó.
+      - name: Compute build number
+        id: build
+        run: |
+          base=$(sed -n 's/^version: *[^+]*+\([0-9]*\).*/\1/p' pubspec.yaml)
+          name=$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml)
+          number=$(( ${base:-0} + ${{ github.run_number }} ))
+          echo "number=$number" >> "$GITHUB_OUTPUT"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "Version: $name ($number)"
+
+      - run: flutter build apk --release --build-number=${{ steps.build.outputs.number }}
+
+      - name: Write release notes
+        env:
+          INPUT_NOTES: ${{ github.event.inputs.release_notes }}
+          COMMIT_MESSAGE: ${{ github.event.workflow_run.head_commit.message }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+          VERSION: ${{ steps.build.outputs.name }} (${{ steps.build.outputs.number }})
+        run: |
+          {
+            if [ -n "$INPUT_NOTES" ]; then
+              echo "$INPUT_NOTES"
+            elif [ -n "$COMMIT_MESSAGE" ]; then
+              echo "$COMMIT_MESSAGE"
+            else
+              git log -1 --format=%B
+            fi
+            echo
+            echo "Version: $VERSION"
+            echo "Commit: ${SHA:0:7}"
+          } > release-notes.txt
+          cat release-notes.txt
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Upload to Firebase App Distribution
+        env:
+          SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          TESTERS: ${{ vars.FIREBASE_TESTERS }}
+          GROUPS: ${{ vars.FIREBASE_TESTER_GROUPS }}
+        run: |
+          if [ -z "$SERVICE_ACCOUNT_JSON" ]; then
+            echo "::error::Thiếu secret FIREBASE_SERVICE_ACCOUNT_JSON"
+            exit 1
+          fi
+          if [ -z "$FIREBASE_APP_ID" ]; then
+            echo "::error::Thiếu biến FIREBASE_APP_ID"
+            exit 1
+          fi
+          if [ -z "$TESTERS" ] && [ -z "$GROUPS" ]; then
+            echo "::error::Cần ít nhất một biến FIREBASE_TESTERS hoặc FIREBASE_TESTER_GROUPS"
+            exit 1
+          fi
+          export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-sa.json"
+          echo "$SERVICE_ACCOUNT_JSON" > "$GOOGLE_APPLICATION_CREDENTIALS"
+
+          args=()
+          [ -n "$TESTERS" ] && args+=(--testers "$TESTERS")
+          [ -n "$GROUPS" ] && args+=(--groups "$GROUPS")
+
+          npx -y firebase-tools@15.34.1 appdistribution:distribute \
+            build/app/outputs/flutter-apk/app-release.apk \
+            --app "$FIREBASE_APP_ID" \
+            --project "$FIREBASE_PROJECT_ID" \
+            --release-notes-file release-notes.txt \
+            "${args[@]}"
+
+      - name: Remove credentials
+        if: always()
+        run: rm -f "$RUNNER_TEMP/firebase-sa.json" android/key.properties android/app/upload-keystore.jks
