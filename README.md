@@ -1,6 +1,32 @@
 # 2048
 
+[![CI](https://github.com/vubaochau-coder/game-2048/actions/workflows/ci.yml/badge.svg)](https://github.com/vubaochau-coder/game-2048/actions/workflows/ci.yml)
+![Flutter](https://img.shields.io/badge/Flutter-3.41.9-02569B?logo=flutter)
+![State](https://img.shields.io/badge/state-flutter__bloc-blue)
+![Platforms](https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Web-lightgrey)
+
 Game ghép ô 2048 viết bằng Flutter, tách ra từ project Nexora.
+
+## Tính năng
+
+- Lối chơi 2048 cổ điển trên bàn 4×4: vuốt để trượt và ghép các ô cùng số.
+- Điểm hiện tại và điểm cao nhất (best).
+- **Lưu ván chơi**: thoát app rồi mở lại vẫn chơi tiếp được ván đang dở.
+- Đạt 2048 có thể chọn **Tiếp tục** để chơi lên số lớn hơn, hoặc **Ván mới**.
+- **Chế độ tự chơi**: AI expectimax tự đi nước, đạt 2048 ở 10/10 ván trong mô phỏng.
+- Giao diện tiếng Việt và tiếng Anh (theo ngôn ngữ của máy).
+- Chạy trên Android, iOS và Web.
+
+## Cách chơi
+
+| Thao tác | Kết quả |
+| --- | --- |
+| Vuốt lên/xuống/trái/phải | Mọi ô trượt theo hướng đó, hai ô cùng số chạm nhau thì ghép lại |
+| Ghép hai ô | Cộng giá trị ô mới vào điểm |
+| Nút **Tự chơi** | Máy tự đi; bấm **Dừng** hoặc tự vuốt để lấy lại quyền điều khiển |
+| Nút **Ván mới** | Bắt đầu lại từ đầu |
+
+Thắng khi tạo được ô 2048; thua khi bàn đầy và không còn nước đi.
 
 ## Chạy game
 
@@ -9,7 +35,19 @@ flutter pub get
 flutter run
 ```
 
-Hỗ trợ Android, iOS và Web. Giao diện có tiếng Việt và tiếng Anh (theo ngôn ngữ máy).
+Phiên bản Flutter được ghim trong `.fvmrc`. Nếu dùng [FVM](https://fvm.app/):
+
+```bash
+fvm install
+fvm flutter run
+```
+
+## Công nghệ
+
+- [Flutter](https://flutter.dev/) + [flutter_bloc](https://pub.dev/packages/flutter_bloc) để quản lý trạng thái
+- [flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage) để lưu điểm cao và ván đang chơi
+- `flutter_localizations` + `intl` (file `.arb`) cho đa ngôn ngữ
+- Font ClearSans
 
 ## Cấu trúc
 
@@ -25,19 +63,21 @@ lib/
     models/                 Ván chơi đã lưu
     sections/, views/       Các phần giao diện
 assets/fonts/               Font ClearSans
-test/game/                  Test cho engine và bloc
+test/game/                  Test cho engine, AI và bloc
 ```
 
-- **Chế độ tự chơi**: bấm nút "Tự chơi" để máy tự đi, bấm "Dừng" hoặc tự vuốt
-  để lấy lại quyền điều khiển. AI (`lib/game/logic/game_2048_solver.dart`) dùng
-  expectimax độ sâu 2 với bảng tra cứu tính sẵn cho mọi hàng 4 ô; trong mô phỏng
-  nó đạt 2048 ở 10/10 ván, mất trung bình chưa tới 1ms mỗi nước.
+## Ghi chú kỹ thuật
+
+- **AI tự chơi** (`lib/game/logic/game_2048_solver.dart`): expectimax độ sâu 2
+  với bảng tra cứu tính sẵn cho mọi hàng 4 ô; trong mô phỏng nó đạt 2048 ở
+  10/10 ván, mất trung bình chưa tới 1ms mỗi nước. Khi tự chơi, mỗi nước cách nhau 250ms.
 - Điểm cao nhất và ván đang chơi được lưu bằng `flutter_secure_storage`, nên mở lại app vẫn chơi tiếp được.
 - Sửa chuỗi dịch trong `lib/l10n/*.arb` rồi chạy `flutter gen-l10n`.
 
 ## Kiểm tra
 
 ```bash
+dart format --output=none --set-exit-if-changed lib test
 flutter analyze
 flutter test
 ```
