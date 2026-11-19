@@ -1,117 +1,53 @@
-# 2048
+<p align="center">
+  <img src="web/icons/Icon-512.png" alt="2048 logo" width="128">
+</p>
 
-[![CI](https://github.com/vubaochau-coder/game-2048/actions/workflows/ci.yml/badge.svg)](https://github.com/vubaochau-coder/game-2048/actions/workflows/ci.yml)
-![Flutter](https://img.shields.io/badge/Flutter-3.41.9-02569B?logo=flutter)
-![State](https://img.shields.io/badge/state-flutter__bloc-blue)
-![Platforms](https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Web-lightgrey)
+<h1 align="center">2048</h1>
 
-Game ghép ô 2048 viết bằng Flutter, tách ra từ project Nexora.
+<p align="center">
+  Trượt, ghép, nhân đôi: đi đến ô 2048 và xa hơn nữa.<br>
+  Chơi được trên Android, iOS và Web, giao diện tiếng Việt và tiếng Anh.
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/new-game.png" alt="Ván mới" width="240">
+  &nbsp;
+  <img src="docs/screenshots/gameplay.png" alt="Đang chơi" width="240">
+  &nbsp;
+  <img src="docs/screenshots/win.png" alt="Đạt 2048" width="240">
+</p>
+
+## Giới thiệu
+
+Bàn chơi 4×4 bắt đầu với hai ô số. Mỗi lần bạn vuốt, mọi ô trượt hết về một
+phía; hai ô **cùng số** chạm nhau sẽ gộp thành một ô có giá trị gấp đôi
+(2 + 2 → 4, 4 + 4 → 8, …). Sau mỗi lượt, một ô 2 hoặc 4 mới xuất hiện ở chỗ trống.
+
+Mục tiêu là tạo ra ô **2048** trước khi bàn bị lấp kín. Đạt 2048 rồi vẫn có thể
+chơi tiếp để săn 4096, 8192…
 
 ## Tính năng
 
-- Lối chơi 2048 cổ điển trên bàn 4×4: vuốt để trượt và ghép các ô cùng số.
-- Điểm hiện tại và điểm cao nhất (best).
-- **Lưu ván chơi**: thoát app rồi mở lại vẫn chơi tiếp được ván đang dở.
-- Đạt 2048 có thể chọn **Tiếp tục** để chơi lên số lớn hơn, hoặc **Ván mới**.
-- **Chế độ tự chơi**: AI expectimax tự đi nước, đạt 2048 ở 10/10 ván trong mô phỏng.
-- Giao diện tiếng Việt và tiếng Anh (theo ngôn ngữ của máy).
-- Chạy trên Android, iOS và Web.
+- 🧩 **Lối chơi 2048 cổ điển**: điều khiển bằng thao tác vuốt, ô mới và ô vừa
+  gộp có hiệu ứng nảy.
+- 📈 **Điểm và kỷ lục**: theo dõi điểm hiện tại và điểm cao nhất (Best).
+- 💾 **Tự lưu ván chơi**: thoát app giữa chừng, mở lại vẫn chơi tiếp đúng ván đang dở.
+- 🏁 **Chơi vượt 2048**: khi đạt 2048, chọn *Tiếp tục* để chơi tiếp hoặc
+  *Thử lại* để bắt đầu ván mới.
+- 🤖 **Chế độ tự chơi**: bấm *Tự chơi* để xem AI tự giải. AI tính trước các
+  nước đi và khả năng ô mới xuất hiện, gần như ván nào cũng đạt 2048.
+- 🌐 **Song ngữ**: giao diện tự đổi theo ngôn ngữ của máy (tiếng Việt / tiếng Anh).
 
 ## Cách chơi
 
 | Thao tác | Kết quả |
 | --- | --- |
-| Vuốt lên/xuống/trái/phải | Mọi ô trượt theo hướng đó, hai ô cùng số chạm nhau thì ghép lại |
-| Ghép hai ô | Cộng giá trị ô mới vào điểm |
-| Nút **Tự chơi** | Máy tự đi; bấm **Dừng** hoặc tự vuốt để lấy lại quyền điều khiển |
+| Vuốt lên / xuống / trái / phải | Mọi ô trượt về hướng đó, hai ô cùng số chạm nhau thì gộp lại |
+| Gộp hai ô | Giá trị ô mới được cộng vào điểm |
+| Nút **Tự chơi** | Máy tự chơi; bấm **Dừng** hoặc tự vuốt để lấy lại quyền điều khiển |
 | Nút **Ván mới** | Bắt đầu lại từ đầu |
 
-Thắng khi tạo được ô 2048; thua khi bàn đầy và không còn nước đi.
+- **Thắng** khi tạo được ô 2048.
+- **Thua** khi bàn kín ô và không còn hai ô cạnh nhau nào cùng số.
 
-## Chạy game
-
-```bash
-flutter pub get
-flutter run
-```
-
-Phiên bản Flutter được ghim trong `.fvmrc`. Nếu dùng [FVM](https://fvm.app/):
-
-```bash
-fvm install
-fvm flutter run
-```
-
-## Công nghệ
-
-- [Flutter](https://flutter.dev/) + [flutter_bloc](https://pub.dev/packages/flutter_bloc) để quản lý trạng thái
-- [flutter_secure_storage](https://pub.dev/packages/flutter_secure_storage) để lưu điểm cao và ván đang chơi
-- `flutter_localizations` + `intl` (file `.arb`) cho đa ngôn ngữ
-- Font ClearSans
-
-## Cấu trúc
-
-```
-lib/
-  main.dart                 MaterialApp + localization
-  core/                     Font, spacing, extension BuildContext
-  l10n/                     Chuỗi dịch (app_en.arb, app_vi.arb) + file sinh tự động
-  game/
-    game_2048_page.dart     Màn hình game
-    bloc/                   Game2048Bloc (trạng thái ván chơi, điểm, best)
-    logic/                  Engine (di chuyển/ghép ô), AI tự chơi, local store, enums
-    models/                 Ván chơi đã lưu
-    sections/, views/       Các phần giao diện
-assets/fonts/               Font ClearSans
-test/game/                  Test cho engine, AI và bloc
-```
-
-## Ghi chú kỹ thuật
-
-- **AI tự chơi** (`lib/game/logic/game_2048_solver.dart`): expectimax độ sâu 2
-  với bảng tra cứu tính sẵn cho mọi hàng 4 ô; trong mô phỏng nó đạt 2048 ở
-  10/10 ván, mất trung bình chưa tới 1ms mỗi nước. Khi tự chơi, mỗi nước cách nhau 250ms.
-- Điểm cao nhất và ván đang chơi được lưu bằng `flutter_secure_storage`, nên mở lại app vẫn chơi tiếp được.
-- Sửa chuỗi dịch trong `lib/l10n/*.arb` rồi chạy `flutter gen-l10n`.
-
-## Kiểm tra
-
-```bash
-dart format --output=none --set-exit-if-changed lib test
-flutter analyze
-flutter test
-```
-
-## Phát hành (Firebase App Distribution)
-
-- Package Android: `com.chauvb.game2048`
-- Dự án Firebase: `chess-app-chauvb` (dùng chung với app chess)
-- Flutter: phiên bản ghim trong `.fvmrc` (cũng được ghim ở `pubspec.yaml`)
-
-Hai workflow trong `.github/workflows/`:
-
-- **CI** (`ci.yml`): kiểm tra format, `flutter analyze`, `flutter test` cho mỗi PR và mỗi lần push lên `main`.
-- **Distribute** (`distribute.yml`): khi CI trên `main` xanh (hoặc chạy tay ở tab Actions), build APK release đã ký rồi đẩy lên Firebase App Distribution. Số build tự tăng theo số lần chạy workflow.
-
-Cấu hình cần có trong *Settings → Secrets and variables → Actions*:
-
-| Loại | Tên | Giá trị |
-| --- | --- | --- |
-| Secret | `FIREBASE_SERVICE_ACCOUNT_JSON` | Nội dung file JSON của service account có quyền *Firebase App Distribution Admin* |
-| Secret | `ANDROID_KEYSTORE_BASE64` | File keystore mã hoá base64 (`base64 -w0 upload-keystore.jks`) |
-| Secret | `ANDROID_KEYSTORE_PASSWORD` | Mật khẩu keystore |
-| Secret | `ANDROID_KEY_ALIAS` | Alias của key |
-| Secret | `ANDROID_KEY_PASSWORD` | Mật khẩu key |
-| Variable | `FIREBASE_APP_ID` | App ID trên Firebase (dạng `1:540704428434:android:...`) |
-| Variable | `FIREBASE_TESTER_GROUPS` và/hoặc `FIREBASE_TESTERS` | Alias nhóm tester / email tester, cách nhau bằng dấu phẩy |
-
-Build và ký trên máy: tạo `android/key.properties` (không commit) với nội dung
-
-```properties
-storePassword=...
-keyPassword=...
-keyAlias=upload
-storeFile=upload-keystore.jks
-```
-
-và đặt file keystore ở `android/app/upload-keystore.jks`. Không có `key.properties` thì bản release được ký bằng debug key.
+**Mẹo:** giữ ô lớn nhất ở một góc và hạn chế vuốt theo hướng kéo nó ra khỏi góc đó.
